@@ -1,16 +1,20 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, Dimensions } from "react-native";
-import { router } from "expo-router";
-import { Timer } from "../src/components/Timer";
+import { View, Text } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import QuestionCard from "../src/components/QuestionCard";
+import { generateQuestions } from "@/utils/questions";
 import { useTimer } from "../src/hooks/useTimer";
 import * as Haptics from "expo-haptics";
-import { questions } from "@/utils/questions";
+import { GameMode, Question } from "@/types";
 
 export default function Game() {
+  const { mode } = useLocalSearchParams<{ mode: GameMode }>();
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const currentQuestion = questions[currentQuestionIndex];
+  const [isLoading, setIsLoading] = useState(true);
+  const questionCount = 5;
 
   const handleTimeout = useCallback(() => {
     handleNextQuestion();
@@ -18,10 +22,32 @@ export default function Game() {
 
   const { timeRemaining, resetTimer } = useTimer(10, handleTimeout);
 
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      setIsLoading(true);
+      try {
+        const generatedQuestions = await generateQuestions({
+          mode,
+          questionCount,
+        });
+        setQuestions(generatedQuestions);
+        setIsLoading(false);
+      } catch (error) {
+        console.error(
+          `Failed to generate questions for the mode ${mode}: `,
+          error
+        );
+        setIsLoading(false);
+      }
+    };
+
+    fetchQuestions();
+  }, [mode]);
+
   const handleAnswer = async (choiceIndex: number) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    if (choiceIndex === currentQuestion.correctAnswer) {
+    if (choiceIndex === questions[currentQuestionIndex].correctAnswer) {
       setScore((prev) => prev + 1);
     }
     handleNextQuestion();
@@ -32,7 +58,7 @@ export default function Game() {
       setCurrentQuestionIndex((prev) => prev + 1);
       resetTimer();
     } else {
-      setGameOver(true); // Mark game as over
+      setGameOver(true);
     }
   };
 
@@ -40,82 +66,29 @@ export default function Game() {
     if (gameOver) {
       router.replace({
         pathname: "/results",
-        params: { score: score },
+        params: { score: score.toString() },
       });
     }
   }, [gameOver]);
 
+  if (isLoading || questions.length === 0) {
+    return (
+      <View className="flex-1 bg-gray-100 justify-center items-center">
+        <Text>Loading questions...</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      {/* Question */}
-      <View style={styles.questionContainer}>
-        <Text style={styles.questionText}>{currentQuestion.question}</Text>
-        <Text style={styles.scoreText}>Score: {score}</Text>
-      </View>
-
-      {/* Timer */}
-      <Timer timeRemaining={timeRemaining} totalTime={10} />
-
-      {/* Answer Buttons */}
-      <View style={styles.answersContainer}>
-        {currentQuestion.choices.map((choice, index) => (
-          <Pressable
-            key={index}
-            style={[
-              styles.answerButton,
-              index === 0 ? styles.topButton : styles.bottomButton,
-            ]}
-            onPress={() => handleAnswer(index)}
-          >
-            <Text style={styles.answerText}>{choice}</Text>
-          </Pressable>
-        ))}
-      </View>
+    <View className="flex-1 bg-gray-100 p-4">
+      <QuestionCard
+        question={questions[currentQuestionIndex].question}
+        choices={questions[currentQuestionIndex].choices}
+        score={score}
+        timeRemaining={timeRemaining}
+        totalTime={10}
+        onAnswer={handleAnswer}
+      />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  questionContainer: {
-    position: "absolute",
-    top: 60,
-    left: 20,
-    right: 20,
-    zIndex: 1,
-    alignItems: "center",
-  },
-  questionText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-  scoreText: {
-    fontSize: 18,
-    color: "#666",
-  },
-  answersContainer: {
-    flex: 1,
-  },
-  answerButton: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  topButton: {
-    backgroundColor: "#4CAF50",
-  },
-  bottomButton: {
-    backgroundColor: "#2196F3",
-  },
-  answerText: {
-    color: "white",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-});
