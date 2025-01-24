@@ -1,37 +1,61 @@
 import React from "react";
 import { View, Text } from "react-native";
+import Svg, { Circle } from "react-native-svg";
 
 interface TimerProps {
   timeRemaining: number;
   totalTime: number;
 }
 
-export const Timer = ({ timeRemaining, totalTime }: TimerProps) => {
+export const Timer: React.FC<TimerProps> = ({ timeRemaining, totalTime }) => {
+  const radius = 40; // Radius of the circle
+  const strokeWidth = 8; // Width of the stroke
+  const circumference = 2 * Math.PI * radius; // Circumference of the circle
+  const progress = (timeRemaining / totalTime) * 100; // Progress as a percentage
+  const strokeDashoffset = circumference - (progress / 100) * circumference; // Stroke offset
+
   return (
     <View
       style={{
-        position: "absolute",
-        alignSelf: "center",
-        top: "45%",
-        zIndex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
-        padding: 20,
-        borderRadius: 40,
-        width: 80,
-        height: 80,
-        justifyContent: "center",
         alignItems: "center",
+        justifyContent: "center",
+        width: radius * 2 + strokeWidth,
+        height: radius * 2 + strokeWidth,
       }}
     >
-      <Text
-        style={{
-          fontSize: 32,
-          fontWeight: "bold",
-          color: "white",
-        }}
-      >
-        {timeRemaining}
+      {/* Time Text */}
+      <Text style={{ color: "white", fontSize: 24, fontWeight: "bold" }}>
+        {timeRemaining}s
       </Text>
+
+      {/* Circular Progress */}
+      <Svg height={radius * 2 + strokeWidth} width={radius * 2 + strokeWidth}>
+        {/* Background Circle */}
+        <Circle
+          cx={radius + strokeWidth / 2}
+          cy={radius + strokeWidth / 2}
+          r={radius}
+          stroke="white"
+          strokeWidth={strokeWidth}
+          fill="none"
+          opacity={0.2}
+        />
+        {/* Foreground Circle (Progress) */}
+        <Circle
+          cx={radius + strokeWidth / 2}
+          cy={radius + strokeWidth / 2}
+          r={radius}
+          stroke="white"
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${radius + strokeWidth / 2} ${
+            radius + strokeWidth / 2
+          })`} // Rotate to start from top
+        />
+      </Svg>
     </View>
   );
 };
