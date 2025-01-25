@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { BackHandler, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "../src/context/AuthContext";
 
 const ScoreCard = ({ label, value }: { label: string; value: number }) => (
   <View className="bg-white rounded-xl p-6 shadow-sm w-36">
@@ -79,12 +80,11 @@ export default function Results() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-400">
       <View className="flex-1 justify-between p-6">
-        {/* Top Section */}
         <View className="items-center space-y-8">
           <View className="items-center space-y-2">
-            <Text className="text-4xl font-extrabold text-gray-800">
+            <Text className="text-4xl font-extrabold text-gray-800 m-10">
               Game Over!
             </Text>
             {scoreValue > highScore && (
@@ -96,15 +96,13 @@ export default function Results() {
             )}
           </View>
 
-          {/* Score Cards */}
           <View className="flex-row justify-between w-full max-w-sm space-x-4">
             <ScoreCard label="Your Score" value={scoreValue} />
             <ScoreCard label="High Score" value={highScore} />
           </View>
         </View>
 
-        {/* Bottom Action Buttons */}
-        <View className="space-y-4 w-full max-w-sm mx-auto">
+        <View className="space-y-4 w-full max-w-sm mx-auto gap-4">
           <ActionButton onPress={handlePlayAgain} label="Play Again" primary />
           <ActionButton onPress={handleHome} label="Back to Home" />
         </View>
